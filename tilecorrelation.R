@@ -2,6 +2,11 @@ library(GenomicRanges)
 library(rtracklayer)
 library(BSgenome.Celegans.UCSC.ce11)
 library(IRanges)
+library("GGally")
+library(gridExtra)
+library(grid)
+library(ggplot2)
+library(lattice)
 
 #make GRanges object from BSgenome (accessed with "Celegans") (i remove the mito chr)
 genomeGR<-GRanges(seqnames=seqnames(Celegans)[1:6],ranges=IRanges(start=1, end=seqlengths(Celegans)[1:6]), strand="*")
@@ -12,10 +17,12 @@ Datafiles<-list.files("/Users/imac/Desktop/Bolaji/PhD/analysis/Bioinformatics_sc
 #create GRangesList object with different sized tiles along genome
 tile1Mb<-unlist(tile(x=genomeGR,width=1000000))
 tile100kb<-unlist(tile(x=genomeGR,width=100000))
-tile10kb<-unlist(tile(x=genomeGR,width=10000))
-tile1kb<-unlist(tile(x=genomeGR,width=1000))
-tile100bp<-unlist(tile(x=genomeGR,width=100))
-tileList<-list("tile1Mb"=tile1Mb,"tile100kb"=tile100kb,"tile10kb"=tile10kb,"tile1kb"=tile1kb,"tile100bp"=tile100bp)
+#tile10kb<-unlist(tile(x=genomeGR,width=10000))
+#tile1kb<-unlist(tile(x=genomeGR,width=1000))
+#tile100bp<-unlist(tile(x=genomeGR,width=100))
+tile50bp<-unlist(tile(x=genomeGR,width=50))
+tile10bp<-unlist(tile(x=genomeGR,width=10))
+tileList<-list("tile1Mb"=tile1Mb,"tile100kb"=tile100kb,"tile10kb"=tile10kb,"tile1kb"=tile1kb,"tile100bp"=tile100bp, "tile50bp"=tile50bp, "tile10bp"=tile10bp)
 
 # read in the bedgraph files in pairs to calculate enrichment counts at different scales
 for (f in 1:length(Datafiles)) {
@@ -45,6 +52,15 @@ for (f in 1:length(Datafiles)) {
   }
 }
 
-BiocManager::install("GGally")
-ggpairs(as.matrix(mcols(tileList[[i]])))
 
+Mb1Tile<- ggcorr(as.data.frame(mcols(tileList[[1]])),label=T,hjust = 1, size = 5, color = "black", layout.exp = 7, method= c("everything","spearman"))+ggtitle("1Mbtilesize")
+bp100Tile<- ggcorr(as.data.frame(mcols(tileList[[5]])),label=T,hjust = 1, size = 5, color = "black", layout.exp = 7, method= c("everything","spearman"))+ggtitle("100bptilesize")
+bp50Tile<- ggcorr(as.data.frame(mcols(tileList[[6]])),label=T,hjust = 1, size = 5, color = "black", layout.exp = 7, method= c("everything","spearman"))+ggtitle("50ptilesize")
+bp10Tile<- ggcorr(as.data.frame(mcols(tileList[[7]])),label=T,hjust = 1, size = 5, color = "black", layout.exp = 7, method= c("everything","spearman"))+ggtitle("10bptilesize")
+#bp10Tileperas<- ggcorr(as.data.frame(mcols(tileList[[7]])),label=T,hjust = 1, size = 5, color = "black", layout.exp = 7)+ggtitle("10bptilesize")
+kb10Tile<- ggcorr(as.data.frame(mcols(tileList[[3]])),label=T,hjust = 1, size = 5, color = "black", layout.exp = 7, method= c("everything","spearman"))+ggtitle("10kbtilesize")
+kb100Tile<- ggcorr(as.data.frame(mcols(tileList[[2]])),label=T,hjust = 1, size = 5, color = "black", layout.exp = 7, method= c("everything","spearman"))+ggtitle("100kbtilesize")
+kb1Tile<- ggcorr(as.data.frame(mcols(tileList[[4]])),label=T,hjust = 1, size = 5, color = "black", layout.exp = 7, method= c("everything","spearman"))+ggtitle("1kbtilesize")
+correlations<-grid.arrange(bp50Tile,bp10Tile, ncol=1, nrow=2)
+ggsave("correlationspage4.pdf", plot =correlations)
+  
