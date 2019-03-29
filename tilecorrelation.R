@@ -39,25 +39,28 @@ library(lattice)
 #}
 
 #make GRanges object from BSgenome (accessed with "Celegans") (i remove the mito chr)
-genomeGR<-GRanges(seqnames=seqnames(Celegans)[1:6],ranges=IRanges(start=1, end=seqlengths(Celegans)[1:6]), strand="*")
-
+#genomeGR<-GRanges(seqnames=seqnames(Celegans)[1:6],ranges=IRanges(start=1, end=seqlengths(Celegans)[1:6]), strand="*")
+#for autosomes
+#genomeGR<-GRanges(seqnames=seqnames(Celegans)[1:5],ranges=IRanges(start=1, end=seqlengths(Celegans)[1:5]), strand="*")
+#for X chromosome
+genomeGR<-GRanges(seqnames=seqnames(Celegans)[6],ranges=IRanges(start=1, end=seqlengths(Celegans)[6]), strand="*")
 # get a list of all the files with the enrichment data
-Datafiles<-list.files("/Users/imac/Desktop/Bolaji/PhD/analysis/Bioinformatics_scripts/Bigwiggle/","bw")
+Datafiles<-list.files("../Bigwiggle/sevinc/Xchromosome/","bw")
 Datafiles
 #create GRangesList object with different sized tiles along genome
 tile1Mb<-unlist(tile(x=genomeGR,width=1000000))
 tile100kb<-unlist(tile(x=genomeGR,width=100000))
-#tile10kb<-unlist(tile(x=genomeGR,width=10000))
-#tile1kb<-unlist(tile(x=genomeGR,width=1000))
-#tile100bp<-unlist(tile(x=genomeGR,width=100))
+tile10kb<-unlist(tile(x=genomeGR,width=10000))
+tile1kb<-unlist(tile(x=genomeGR,width=1000))
+tile100bp<-unlist(tile(x=genomeGR,width=100))
 tile50bp<-unlist(tile(x=genomeGR,width=50))
 tile10bp<-unlist(tile(x=genomeGR,width=10))
 tileList<-list("tile1Mb"=tile1Mb,"tile100kb"=tile100kb,"tile10kb"=tile10kb,"tile1kb"=tile1kb,"tile100bp"=tile100bp, "tile50bp"=tile50bp, "tile10bp"=tile10bp)
 
 # read in the bedgraph files in pairs to calculate enrichment counts at different scales
-for (f in 1:length(Datafiles)) {
+for (f in 1:length(Datafiles)) { 
   #get normalised counts
-  Data<-import(paste0("/Users/imac/Desktop/Bolaji/PhD/analysis/Bioinformatics_scripts/Bigwiggle/",Datafiles[f]))
+  Data<-import(paste0("../Bigwiggle/sevinc/Xchromosome/",Datafiles[f]))
 
   #make a GRangesList from GRanges
   for (i in 1:length(tileList)) {
@@ -65,13 +68,13 @@ for (f in 1:length(Datafiles)) {
     
     # convert GRanges back to coverage
     rle<-coverage(Data,weight="score")
-    if (length(rle)>6){
-      j<-grep("M",names(rle))
-      rle<-coverage(Data,weight="score")[-j]
-    }
+    #if (length(rle)>6){
+     # j<-grep("M",names(rle))
+      #rle<-coverage(Data,weight="score")[-j]
+     #}
     
-    names(rle)<-gsub("chr","", names(rle))
-    names(rle)<-paste0("chr",names(rle))
+    #names(rle)<-gsub("chr","", names(rle))
+    #names(rle)<-paste0("chr",names(rle))
     #seqlevels(rle)<-paste0("chr", seqlevels(rle))
     
     #create views corresponding to the tiles on the coverage rle and average counts
@@ -81,6 +84,7 @@ for (f in 1:length(Datafiles)) {
     mcols(tileList[[i]])[,Datafiles[f]]<-as.data.frame(unlist(summedCov))
   }
 }
+
 
 
 #to make correlations without ordering based on similariies of correlation
