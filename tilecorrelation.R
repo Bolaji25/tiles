@@ -41,11 +41,12 @@ library(lattice)
 #make GRanges object from BSgenome (accessed with "Celegans") (i remove the mito chr)
 #genomeGR<-GRanges(seqnames=seqnames(Celegans)[1:6],ranges=IRanges(start=1, end=seqlengths(Celegans)[1:6]), strand="*")
 #for autosomes
-#genomeGR<-GRanges(seqnames=seqnames(Celegans)[1:5],ranges=IRanges(start=1, end=seqlengths(Celegans)[1:5]), strand="*")
+genomeGR<-GRanges(seqnames=seqnames(Celegans)[1:5],ranges=IRanges(start=1, end=seqlengths(Celegans)[1:5]), strand="*")
 #for X chromosome
 genomeGR<-GRanges(seqnames=seqnames(Celegans)[6],ranges=IRanges(start=1, end=seqlengths(Celegans)[6]), strand="*")
 # get a list of all the files with the enrichment data
 Datafiles<-list.files("../Bigwiggle/sevinc/Xchromosome/","bw")
+#Datafiles<-list.files("../Bigwiggle/sevinc/Autosomes/","bw")
 Datafiles
 #create GRangesList object with different sized tiles along genome
 tile1Mb<-unlist(tile(x=genomeGR,width=1000000))
@@ -57,13 +58,13 @@ tile50bp<-unlist(tile(x=genomeGR,width=50))
 tile10bp<-unlist(tile(x=genomeGR,width=10))
 tileList<-list("tile1Mb"=tile1Mb,"tile100kb"=tile100kb,"tile10kb"=tile10kb,"tile1kb"=tile1kb,"tile100bp"=tile100bp, "tile50bp"=tile50bp, "tile10bp"=tile10bp)
 
-# read in the bedgraph files in pairs to calculate enrichment counts at different scales
-for (f in 1:length(Datafiles)) { 
+# for X chromosome read in the bedgraph files in pairs to calculate enrichment counts at different scales
+for (f in 1:length(Datafiles))  
   #get normalised counts
   Data<-import(paste0("../Bigwiggle/sevinc/Xchromosome/",Datafiles[f]))
-
+  
   #make a GRangesList from GRanges
-  for (i in 1:length(tileList)) {
+  for (i in 1:length(tileList)) 
     tiles<-split(tileList[[i]],seqnames(tileList[[i]]))
     
     # convert GRanges back to coverage
@@ -82,9 +83,36 @@ for (f in 1:length(Datafiles)) {
     
     #now save the values into tiles
     mcols(tileList[[i]])[,Datafiles[f]]<-as.data.frame(unlist(summedCov))
-  }
+  }  
 }
 
+# for autosomes read in the bedgraph files in pairs to calculate enrichment counts at different scales
+for (f in 1:length(Datafiles)) { 
+  #get normalised counts
+  Data<-import(paste0("../Bigwiggle/sevinc/Autosomes/",Datafiles[f]))
+  
+  #make a GRangesList from GRanges
+  for (i in 1:length(tileList)) {
+    tiles<-split(tileList[[i]],seqnames(tileList[[i]]))
+    
+    # convert GRanges back to coverage
+    rle<-coverage(Data,weight="score")
+    if (length(rle)>5){
+      j<-grep("chrM",names(rle))
+      rle<-coverage(Data,weight="score")[-j]
+    }
+    
+    #names(rle)<-gsub("chr","", names(rle))
+    #names(rle)<-paste0("chr",names(rle))
+    #seqlevels(rle)<-paste0("chr", seqlevels(rle))
+    
+    #create views corresponding to the tiles on the coverage rle and average counts
+    summedCov<-viewMeans(RleViewsList(rangesList=tiles,rleList = rle))
+    
+    #now save the values into tiles
+    mcols(tileList[[i]])[,Datafiles[f]]<-as.data.frame(unlist(summedCov))
+  }
+}
 
 
 #to make correlations without ordering based on similariies of correlation
@@ -113,7 +141,7 @@ library(tidyr)
 # create unordered correlation matrix
 #corMat<-ggcorr(dt[, -1])
 #corMat
-corMat<-ggcorr(as.data.frame(mcols(tileList[[3]])))
+corMat<-ggcorr(as.data.frame(mcols(tileList[[5]])))
 corMat
 
 # extract the data from the corMat object
@@ -150,12 +178,26 @@ cor.matrix <- as.matrix(corwide)
 cor.dendro <- as.dendrogram(hclust(d = dist(x = cor.matrix)))
 cor.order <- order.dendrogram(cor.dendro)
 
-newDF<-as.data.frame(mcols(tileList[[1]]))[,cor.order]
-Mb1Tile<- ggcorr(newDF,
-                 label=T,hjust = 1, size = 5, color = "black",
-                 layout.exp = 8, method= c("everything","spearman"))+ggtitle("1Mbtilesize")
-correlations<-grid.arrange(Mb1Tile,kb100Tile, ncol=1, nrow=2)
-ggsave("correlationsordered1mb100kb.pdf", plot =correlations)
+#newDFX<-as.data.frame(mcols(tileList[[1]]))[,cor.order]
+#newDFA<-as.data.frame(mcols(tileList[[1]]))[,cor.order]
+newDFX100<-as.data.frame(mcols(tileList[[5]]))[,cor.order]
+newDFA100<-as.data.frame(mcols(tileList[[5]]))[,cor.order]
+#Mb1TileX<- ggcorr(newDFX,
+ #                label=T,hjust = 1, size = 2, color = "black",
+  #               layout.exp = 6, method= c("everything","spearman"))+ggtitle("1Mbtilesize")
+#Mb1TileA<- ggcorr(newDFA,
+ #                 label=T,hjust = 1, size = 2, color = "black",
+  #                layout.exp = 6, method= c("everything","spearman"))+ggtitle("1Mbtilesize")
+bp100TileX<- ggcorr(newDFX100,
+                label=T,hjust = 1, size = 2, color = "black",
+                  layout.exp = 6, method= c("everything","spearman"))+ggtitle("100bptilesize")
+bp100TileA<- ggcorr(newDFA100,
+                    label=T,hjust = 1, size = 2, color = "black",
+                    layout.exp = 6, method= c("everything","spearman"))+ggtitle("100bptilesize")
+#correlations1<-grid.arrange(Mb1TileX,Mb1TileA, ncol=1, nrow=2)
+correlations2<-grid.arrange(bp100TileX, bp100TileA, ncol=1, nrow=2)
+#ggsave("dsmf_dpy_h4k20_corr1mbAX.pdf", plot =correlations1)
+ggsave("dsmf_dpy_h4k20_corr100bpAX.pdf", plot =correlations2)
 # perform heirarchical clustering
 #corhc<-hclust(cordist)
 
